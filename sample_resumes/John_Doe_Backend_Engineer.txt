@@ -1,0 +1,29 @@
+JOHN DOE
+Email: john.doe@emailtech.com
+Phone: +91 98765 43210
+City: Mumbai, India
+Date of Birth: 14/05/1993
+
+PROFESSIONAL SUMMARY
+Senior Backend Engineer with 6+ years of extensive hands-on experience building distributed scalable backend systems, microservices, and high-throughput data processing pipelines.
+
+CURRENT DESIGNATION: Senior Backend Engineer
+DEPARTMENT: Admin / Engineering
+EXPECTED SALARY: ₹18,00,000 / year (₹1,50,000 / mo)
+REASON FOR LEAVING: Looking for faster career growth and technical leadership opportunities.
+
+CORE COMPETENCIES & TECHNICAL SKILLS
+Python, FastAPI, Django, PostgreSQL, Docker, Kubernetes, AWS, REST API, Git, Redis, Linux
+
+WORK EXPERIENCE
+Senior Backend Developer | CloudScale Solutions (2021 - Present)
+- Designed and built asynchronous microservices using FastAPI, Redis, and PostgreSQL.
+- Optimized query latency by 45% across large datasets.
+- Implemented CI/CD pipelines and container orchestration on AWS Kubernetes.
+
+Backend Developer | FinTech Labs (2018 - 2021)
+- Developed secure transaction processing APIs and payment gateways.
+- Maintained 99.99% uptime for transaction processing ledger.
+
+EDUCATION
+B.Tech in Computer Science & Engineering | University of Mumbai (2014 - 2018)

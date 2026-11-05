@@ -1,0 +1,83 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 1240 >>
+stream
+BT
+/F1 16 Tf
+50 740 Td
+(ALEX MORGAN) Tj
+/F1 10 Tf
+0 -20 Td
+(Email: alex.morgan@techstack.io | Phone: +1 415 890 2341 | Location: San Francisco, CA) Tj
+0 -16 Td
+(Position: Senior Full Stack Engineer) Tj
+0 -16 Td
+(--------------------------------------------------------------------------------) Tj
+0 -16 Td
+(PROFESSIONAL SUMMARY) Tj
+0 -16 Td
+(Senior Full Stack Engineer with 6.5 years hands-on experience in cloud architectures.) Tj
+0 -16 Td
+(Current Designation: Senior Full Stack Engineer) Tj
+0 -16 Td
+(Current Company: Apex Cloud Systems) Tj
+0 -16 Td
+(--------------------------------------------------------------------------------) Tj
+0 -16 Td
+(TECHNICAL SKILLS) Tj
+0 -16 Td
+(Python, TypeScript, React, Next.js, Node.js, FastAPI, PostgreSQL, Docker, AWS, Redis, Git) Tj
+0 -16 Td
+(--------------------------------------------------------------------------------) Tj
+0 -16 Td
+(WORK EXPERIENCE) Tj
+0 -16 Td
+(Senior Full Stack Engineer | Apex Cloud Systems (2021 - Present)) Tj
+0 -14 Td
+(- Led an engineering team of 8 building responsive React and FastAPI platforms.) Tj
+0 -14 Td
+(- Improved frontend load time by 60% through code splitting and caching.) Tj
+0 -16 Td
+(Full Stack Software Developer | Horizon Data Labs (2018 - 2021)) Tj
+0 -14 Td
+(- Built real-time analytics dashboard with React, TypeScript, and microservices.) Tj
+0 -16 Td
+(--------------------------------------------------------------------------------) Tj
+0 -16 Td
+(EDUCATION) Tj
+0 -16 Td
+(B.S. in Computer Science | Stanford University (Graduation Year: 2018)) Tj
+0 -16 Td
+(--------------------------------------------------------------------------------) Tj
+0 -16 Td
+(ACHIEVEMENTS) Tj
+0 -16 Td
+(Architected distributed web application handling 4.5M monthly visitors.) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000234 00000 n 
+0000000305 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1720
+%%EOF

@@ -1,0 +1,9 @@
+KEVIN BROOKS
+Email: kevin.brooks@example.com
+Position: Python Developer
+
+TECHNICAL SKILLS
+Python, SQL, Git
+
+EDUCATION
+B.Sc in Computer Science (2022)

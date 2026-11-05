@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Applicant Ledger | AI-Powered Resume Management System</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans, Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Libraries: React 18, Babel, PDF.js, Mammoth.js, SheetJS, FileSaver -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- In-browser PDF & DOCX text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  
+  <!-- Excel and CSV exports -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased selection:bg-indigo-100 selection:text-indigo-800">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    const API_BASE = "http://127.0.0.1:8000";
+
+    // Specified Departments
+    const DEPARTMENTS = [
+      "Front office",
+      "Kitchen",
+      "Service",
+      "Account",
+      "Maintenance",
+      "Sales",
+      "Admin",
+      "Housekeeping",
+      "Stores",
+      "Purchase",
+      "Others"
+    ];
+
+    const DEPT_BADGES = {
+      "Front office": { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200" },
+      "Kitchen": { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200" },
+      "Service": { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+      "Account": { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
+      "Maintenance": { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
+      "Sales": { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" },
+      "Admin": { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-200" },
+      "Housekeeping": { bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200" },
+      "Stores": { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-300" },
+      "Purchase": { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+      "Others": { bg: "bg-gray-100", text: "text-gray-700", border: "border-gray-200" }
+    };
+
+    // Standard Application Statuses
+    const STATUS_OPTIONS = [
+      "New Application",
+      "Under Review",
+      "Shortlisted",
+      "Interview Scheduled",
+      "Selected",
+      "Rejected",
+      "On Hold"
+    ];
+
+    const STATUS_CONFIG = {
+      "New Application": { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", dot: "bg-blue-500" },
+      "Under Review": { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", dot: "bg-amber-500" },
+      "Shortlisted": { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200", dot: "bg-purple-500" },
+      "Interview Scheduled": { bg: "bg-cyan-50", text: "text-cyan-700", border: "border-cyan-200", dot: "bg-cyan-500" },
+      "Selected": { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500" },
+      "Rejected": { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", dot: "bg-rose-500" },
+      "On Hold": { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-300", dot: "bg-slate-500" }
+    };
+
+    // Sequential ID Generator: Strictly starts at A001 -> A002 -> A003 ... -> A999 -> B001
+    function getNextApplicantId(existingApplicants) {
+      if (!existingApplicants || existingApplicants.length === 0) {
+        return "A001";
+      }
+      let maxPrefix = "A";
+      let maxNum = 0;
+
+      existingApplicants.forEach(app => {
+        const idStr = app.applicant_id || "";
+        const m = idStr.match(/^([A-Z])(\d{3})$/);
+        if (m) {
+          const prefix = m[1];
+          const num = parseInt(m[2], 10);
+          if (prefix > maxPrefix || (prefix === maxPrefix && num > maxNum)) {
+            maxPrefix = prefix;
+            maxNum = num;
+          }
+        }
+      });
+
+      if (maxNum === 0 && maxPrefix === "A") {
+        return "A001";
+      }
+
+      let nextNum = maxNum + 1;
+      if (nextNum > 999) {
+        const nextPrefix = String.fromCharCode(maxPrefix.charCodeAt(0) + 1);
+        return `${nextPrefix}001`;
+      }
+      return `${maxPrefix}${String(nextNum).padStart(3, '0')}`;
+    }
+
+    // Default Seed Applicants: Strictly starting from A001 in sequential order
+    const INITIAL_APPLICANTS = [
+      {
+        id: 1,
+        applicant_id: "A001",
+        applicant: "Aarav Sharma",
+        designation: "Front Office Executive",
+        department: "Front office",
+        email: "aarav.sharma@example.com",
+        contact_no: "+91 98000 10000",
+        dob: "01/01/1990",
+        city: "Mumbai",
+        status: "New Application",
+        remarks: "Profile screened for Front Office Executive. 4 years luxury hotel desk experience.",
+        skills: [{ id: 1, skill_name: "OPERA PMS" }, { id: 2, skill_name: "Guest Relations" }, { id: 3, skill_name: "Customer Service" }],
+        resume_filename: "Aarav_Sharma_Resume.pdf",
+        uploaded_at: new Date(Date.now() - 86400000 * 4).toISOString()
+      },
+      {
+        id: 2,
+        applicant_id: "A002",
+        applicant: "Vihaan Patel",
+        designation: "Sous Chef",
+        department: "Kitchen",
+        email: "vihaan.patel@example.com",
+        contact_no: "+91 98001 10073",
+        dob: "02/02/1991",
+        city: "Delhi",
+        status: "Under Review",
+        remarks: "Continental & Asian kitchen specialist with active HACCP sanitation certification.",
+        skills: [{ id: 4, skill_name: "Culinary Arts" }, { id: 5, skill_name: "HACCP" }, { id: 6, skill_name: "Food Safety" }],
+        resume_filename: "Vihaan_Patel_Resume.pdf",
+        uploaded_at: new Date(Date.now() - 86400000 * 3).toISOString()
+      },
+      {
+        id: 3,
+        applicant_id: "A003",
+        applicant: "Aditya Verma",
+        designation: "Restaurant Captain",
+        department: "Service",
+        email: "aditya.verma@example.com",
+        contact_no: "+91 98002 10146",
+        dob: "03/03/1992",
+        city: "Bangalore",
+        status: "Shortlisted",
+        remarks: "F&B captain skilled in banquet guest dining and Micros POS cashiering.",
+        skills: [{ id: 7, skill_name: "F&B Service" }, { id: 8, skill_name: "Banquet" }, { id: 9, skill_name: "Micros POS" }],
+        resume_filename: "Aditya_Verma_Resume.pdf",
+        uploaded_at: new Date(Date.now() - 86400000 * 3).toISOString()
+      },
+      {
+        id: 4,
+        applicant_id: "A004",
+        applicant: "Rohan Gupta",
+        designation: "Senior Accountant",
+        department: "Account",
+        email: "rohan.gupta@example.com",
+        contact_no: "+91 98003 10219",
+        dob: "04/04/1993",
+        city: "Pune",
+        status: "Interview Scheduled",
+        remarks: "Chartered finance lead in Tally Prime, corporate GST, and ledger auditing.",
+        skills: [{ id: 10, skill_name: "Tally Prime" }, { id: 11, skill_name: "GST" }, { id: 12, skill_name: "MS Excel" }, { id: 13, skill_name: "Ledger" }],
+        resume_filename: "Rohan_Gupta_Resume.pdf",
+        uploaded_at: new Date(Date.now() - 86400000 * 2).toISOString()
+      },
+      {
+        id: 5,
+        applicant_id: "A005",
+        applicant: "Kabir Singh",
+        designation: "Facility Maintenance Engineer",
+        department: "Maintenance",
+        email: "kabir.singh@example.com",
+        contact_no: "+91 98004 10292",
+        dob: "05/05/1994",
+        city: "Hyderabad",
+        status: "Under Review",
+        remarks: "Maintains industrial HVAC, plumbing, and 3-phase building power infrastructure.",
+        skills: [{ id: 14, skill_name: "HVAC" }, { id: 15, skill_name: "Electrical" }, { id: 16, skill_name: "Plumbing" }],
+        resume_filename: "Kabir_Singh_Resume.pdf",
+        uploaded_at: new Date(Date.now() - 86400000 * 2).toISOString()
+      },
+      {
+        id: 6,
+        applicant_id: "A006",
+        applicant: "Ananya Reddy",
+        designation: "B2B Sales Executive",
+        department: "Sales",
+        email: "ananya.reddy@example.com",
+        contact_no: "+91 98005 10365",
+        dob: "06/06/1995",
+        city: "Chennai",
+        status: "Selected",
+        remarks: "Proven track record closing corporate B2B contracts with 98% client retention.",
+        skills: [{ id: 17, skill_name: "B2B Sales" }, { id: 18, skill_name: "CRM" }, { id: 19, skill_name: "Client Retention" }],
+        resume_filename: "Ananya_Reddy_Resume.pdf",
+        uploaded_at: new Date(Date.now() - 86400000 * 1).toISOString()
+      },
+      {
+        id: 7,
+        applicant_id: "A007",
+        applicant: "Diya Mehta",
+        designation: "HR & Administrative Officer",
+        department: "Admin",
+        email: "diya.mehta@example.com",
+        contact_no: "+91 98006 10438",
+        dob: "07/07/1996",
+        city: "Kolkata",
+        status: "Interview Scheduled",
+        remarks: "Manages HR recruitment pipeline, biometric attendance, and office administration.",
+        skills: [{ id: 20, skill_name: "Recruitment" }, { id: 21, skill_name: "Payroll" }, { id: 22, skill_name: "Operations" }],
+        resume_filename: "Diya_Mehta_Resume.pdf",
+        uploaded_at: new Date(Date.now() - 86400000 * 1).toISOString()
+      },
+      {
+        id: 8,
+        applicant_id: "A008",
+        applicant: "Ishaan Nair",
+        designation: "Housekeeping Supervisor",
+        department: "Housekeeping",
+        email: "ishaan.nair@example.com",
+        contact_no: "+91 98007 10511",
+        dob: "08/08/1997",
+        city: "Ahmedabad",
+        status: "New Application",
+        remarks: "Daily room inspection audit lead, manages chemical cleaning and linen inventories.",
+        skills: [{ id: 23, skill_name: "Room Inspection" }, { id: 24, skill_name: "Inventory" }, { id: 25, skill_name: "Linen Management" }],
+        resume_filename: "Ishaan_Nair_Resume.pdf",
+        uploaded_at: new Date().toISOString()
+      },
+      {
+        id: 9,
+        applicant_id: "A009",
+        applicant: "Pooja Joshi",
+        designation: "Store Keeper",
+        department: "Stores",
+        email: "pooja.joshi@example.com",
+        contact_no: "+91 98008 10584",
+        dob: "09/09/1998",
+        city: "Goa",
+        status: "Selected",
+        remarks: "Audits warehouse receipts, FIFO rotation, and inventory ledger reconciliations.",
+        skills: [{ id: 26, skill_name: "Stock Auditing" }, { id: 27, skill_name: "Purchase" }, { id: 28, skill_name: "Warehouse" }],
+        resume_filename: "Pooja_Joshi_Resume.pdf",
+        uploaded_at: new Date().toISOString()
+      },
+      {
+        id: 10,
+        applicant_id: "A010",
+        applicant: "Siddharth Rao",
+        designation: "Procurement & Purchase Officer",
+        department: "Purchase",
+        email: "siddharth.rao@example.com",
+        contact_no: "+91 98009 10657",
+        dob: "10/10/1995",
+        city: "Jaipur",
+        status: "Shortlisted",
+        remarks: "Manages vendor contracts, PO lifecycle, and supplier negotiation.",
+        skills: [{ id: 29, skill_name: "Procurement" }, { id: 30, skill_name: "Purchase" }, { id: 31, skill_name: "Vendor Management" }],
+        resume_filename: "Siddharth_Rao_Resume.pdf",
+        uploaded_at: new Date().toISOString()
+      }
+    ];
+
+    // Main App Component
+    function App() {
+      const [activeTab, setActiveTab] = useState("ledger"); // ledger, dashboard, upload, analytics, settings
+      const [applicants, setApplicants] = useState(() => {
+        const saved = localStorage.getItem("applicant_ledger_v2");
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].applicant_id && parsed[0].applicant_id.startsWith("A")) {
+              return parsed;
+            }
+          } catch (e) {}
+        }
+        return INITIAL_APPLICANTS;
+      });
+
+      const [processingLogs, setProcessingLogs] = useState(() => {
+        const saved = localStorage.getItem("applicant_ledger_logs_v2");
+        return saved ? JSON.parse(saved) : [
+          { id: 1, resume_filename: "Aarav_Sharma_Resume.pdf", file_size_bytes: 45200, status: "Completed", created_at: new Date().toISOString(), duration_ms: 220 },
+          { id: 2, resume_filename: "Vihaan_Patel_Resume.pdf", file_size_bytes: 51200, status: "Completed", created_at: new Date().toISOString(), duration_ms: 250 },
+          { id: 3, resume_filename: "Aditya_Verma_Resume.pdf", file_size_bytes: 48900, status: "Completed", created_at: new Date().toISOString(), duration_ms: 210 }
+        ];
+      });
+
+      const [backendConnected, setBackendConnected] = useState(false);
+      const [selectedApplicant, setSelectedApplicant] = useState(null);
+      const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+      const [searchQuery, setSearchQuery] = useState("");
+      const [statusFilter, setStatusFilter] = useState("All");
+      const [departmentFilter, setDepartmentFilter] = useState("All");
+      const [cityFilter, setCityFilter] = useState("All");
+      const [selectedApplicantIds, setSelectedApplicantIds] = useState([]);
+      const [toast, setToast] = useState(null);
+
+      // Check Backend Connectivity periodically
+      useEffect(() => {
+        async function checkBackend() {
+          try {
+            const res = await fetch(`${API_BASE}/api/health`, { method: "GET" });
+            if (res.ok) {
+              setBackendConnected(true);
+              const appRes = await fetch(`${API_BASE}/api/applicants?limit=300`);
+              if (appRes.ok) {
+                const liveData = await appRes.json();
+                if (liveData && liveData.length > 0) {
+                  setApplicants(liveData);
+                }
+              }
+              const logRes = await fetch(`${API_BASE}/api/upload/logs`);
+              if (logRes.ok) {
+                const liveLogs = await logRes.json();
+                if (liveLogs && liveLogs.length > 0) {
+                  setProcessingLogs(liveLogs);
+                }
+              }
+            } else {
+              setBackendConnected(false);
+            }
+          } catch (err) {
+            setBackendConnected(false);
+          }
+        }
+        checkBackend();
+        const interval = setInterval(checkBackend, 15000);
+        return () => clearInterval(interval);
+      }, []);
+
+      useEffect(() => {
+        localStorage.setItem("applicant_ledger_v2", JSON.stringify(applicants));
+      }, [applicants]);
+
+      useEffect(() => {
+        localStorage.setItem("applicant_ledger_logs_v2", JSON.stringify(processingLogs));
+      }, [processingLogs]);
+
+      const showToast = (message, type = "success") => {
+        setToast({ message, type, id: Date.now() });
+        setTimeout(() => setToast(null), 4000);
+      };
+
+      // Filtered applicants
+      const filteredApplicants = useMemo(() => {
+        return applicants.filter(app => {
+          if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            const skillsStr = (app.skills || []).map(s => s.skill_name || s).join(" ").toLowerCase();
+            const matchId = (app.applicant_id || "").toLowerCase().includes(q);
+            const matchApplicant = (app.applicant || "").toLowerCase().includes(q);
+            const matchDesignation = (app.designation || "").toLowerCase().includes(q);
+            const matchDept = (app.department || "").toLowerCase().includes(q);
+            const matchEmail = (app.email || "").toLowerCase().includes(q);
+            const matchContact = (app.contact_no || "").toLowerCase().includes(q);
+            const matchCity = (app.city || "").toLowerCase().includes(q);
+            const matchRemarks = (app.remarks || "").toLowerCase().includes(q);
+            const matchSkills = skillsStr.includes(q);
+
+            if (!matchId && !matchApplicant && !matchDesignation && !matchDept && !matchEmail && !matchContact && !matchCity && !matchRemarks && !matchSkills) {
+              return false;
+            }
+          }
+
+          if (statusFilter !== "All" && app.status !== statusFilter) {
+            return false;
+          }
+
+          if (departmentFilter !== "All" && app.department !== departmentFilter) {
+            return false;
+          }
+
+          if (cityFilter !== "All" && (app.city || "").toLowerCase() !== cityFilter.toLowerCase()) {
+            return false;
+          }
+
+          return true;
+        });
+      }, [applicants, searchQuery, statusFilter, departmentFilter, cityFilter]);
+
+      // Unique cities list for filter
+      const availableCities = useMemo(() => {
+        const set = new Set();
+        applicants.forEach(a => { if (a.city && a.city !== "NA") set.add(a.city); });
+        return Array.from(set).sort();
+      }, [applicants]);
+
+      // Dynamic Dashboard Stats
+      const dashboardStats = useMemo(() => {
+        const total = applicants.length;
+        const newApp = applicants.filter(a => a.status === "New Application").length;
+        const underRev = applicants.filter(a => a.status === "Under Review").length;
+        const short = applicants.filter(a => a.status === "Shortlisted").length;
+        const interview = applicants.filter(a => a.status === "Interview Scheduled").length;
+        const selected = applicants.filter(a => a.status === "Selected").length;
+        const rejected = applicants.filter(a => a.status === "Rejected").length;
+        const onHold = applicants.filter(a => a.status === "On Hold").length;
+
+        return { total, newApp, underRev, short, interview, selected, rejected, onHold };
+      }, [applicants]);
+
+      // Status change
+      const handleStatusChange = async (applicantId, newStatus) => {
+        setApplicants(prev => prev.map(a => a.id === applicantId ? { ...a, status: newStatus } : a));
+        if (selectedApplicant && selectedApplicant.id === applicantId) {
+          setSelectedApplicant(prev => ({ ...prev, status: newStatus }));
+        }
+        if (backendConnected) {
+          try {
+            await fetch(`${API_BASE}/api/applicants/${applicantId}/status`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: newStatus })
+            });
+          } catch (e) { console.error(e); }
+        }
+        showToast(`Status updated to "${newStatus}"`, "success");
+      };
+
+      // Department change
+      const handleDepartmentChange = async (applicantId, newDept) => {
+        setApplicants(prev => prev.map(a => a.id === applicantId ? { ...a, department: newDept } : a));
+        if (selectedApplicant && selectedApplicant.id === applicantId) {
+          setSelectedApplicant(prev => ({ ...prev, department: newDept }));
+        }
+        if (backendConnected) {
+          try {
+            await fetch(`${API_BASE}/api/applicants/${applicantId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ department: newDept })
+            });
+          } catch (e) { console.error(e); }
+        }
+        showToast(`Department updated to "${newDept}"`, "success");
+      };
+
+      // Delete applicant
+      const handleDeleteApplicant = async (applicantId, candidateName) => {
+        if (!confirm(`Delete applicant "${candidateName}"?`)) return;
+        setApplicants(prev => prev.filter(a => a.id !== applicantId));
+        if (selectedApplicant && selectedApplicant.id === applicantId) {
+          setSelectedApplicant(null);
+        }
+        if (backendConnected) {
+          try {
+            await fetch(`${API_BASE}/api/applicants/${applicantId}`, { method: "DELETE" });
+          } catch (e) { console.error(e); }
+        }
+        showToast(`Deleted ${candidateName}`, "info");
+      };
+
+      // Bulk Status
+      const handleBulkStatusChange = async (newStatus) => {
+        if (selectedApplicantIds.length === 0) return;
+        setApplicants(prev => prev.map(a => selectedApplicantIds.includes(a.id) ? { ...a, status: newStatus } : a));
+        if (backendConnected) {
+          try {
+            await fetch(`${API_BASE}/api/applicants/bulk-status`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ applicant_ids: selectedApplicantIds, status: newStatus })
+            });
+          } catch (e) { console.error(e); }
+        }
+        showToast(`Updated status for ${selectedApplicantIds.length} applicants`, "success");
+        setSelectedApplicantIds([]);
+      };
+
+      // Bulk Delete
+      const handleBulkDelete = async () => {
+        if (selectedApplicantIds.length === 0) return;
+        if (!confirm(`Delete ${selectedApplicantIds.length} selected applicants?`)) return;
+        setApplicants(prev => prev.filter(a => !selectedApplicantIds.includes(a.id)));
+        if (backendConnected) {
+          try {
+            await fetch(`${API_BASE}/api/applicants/bulk-delete`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ applicant_ids: selectedApplicantIds })
+            });
+          } catch (e) { console.error(e); }
+        }
+        showToast(`Deleted ${selectedApplicantIds.length} applicants`, "info");
+        setSelectedApplicantIds([]);
+      };
+
+      // Export CSV
+      const handleExportCSV = () => {
+        if (backendConnected) {
+          window.open(`${API_BASE}/api/applicants/export/csv`, "_blank");
+          return;
+        }
+        const rows = [
+          ["Applicant ID", "Applicant", "Designation", "Department", "Email", "Contact No.", "DOB", "City", "Status", "Remarks", "Skills", "Resume File"]
+        ];
+        applicants.forEach(a => {
+          const skillsStr = (a.skills && a.skills.length > 0) ? a.skills.map(s => s.skill_name || s).join(", ") : "NA";
+          rows.push([
+            a.applicant_id,
+            a.applicant || "NA",
+            a.designation || "NA",
+            a.department || "Others",
+            a.email || "NA",
+            a.contact_no || "NA",
+            a.dob || "NA",
+            a.city || "NA",
+            a.status || "New Application",
+            a.remarks || "NA",
+            skillsStr,
+            a.resume_filename || "NA"
+          ]);
+        });
+        const csvContent = "\uFEFF" + rows.map(e => e.map(cell => `"${(cell || "").toString().replace(/"/g, '""')}"`).join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        saveAs(blob, `applicant_ledger_${Date.now()}.csv`);
+        showToast("Exported Applicant Ledger to CSV", "success");
+      };
+
+      // Export Excel (.xlsx)
+      const handleExportExcel = () => {
+        if (backendConnected) {
+          window.open(`${API_BASE}/api/applicants/export/excel`, "_blank");
+          return;
+        }
+        const dataForSheet = applicants.map(a => ({
+          "Applicant ID": a.applicant_id,
+          "Applicant": a.applicant || "NA",
+          "Designation": a.designation || "NA",
+          "Department": a.department || "Others",
+          "Email": a.email || "NA",
+          "Contact No.": a.contact_no || "NA",
+          "DOB": a.dob || "NA",
+          "City": a.city || "NA",
+          "Status": a.status || "New Application",
+          "Remarks": a.remarks || "NA",
+          "Skills": (a.skills && a.skills.length > 0) ? a.skills.map(s => s.skill_name || s).join(", ") : "NA",
+          "Resume File": a.resume_filename || "NA"
+        }));
+        const ws = XLSX.utils.json_to_sheet(dataForSheet);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Applicant Ledger");
+        XLSX.writeFile(wb, `applicant_ledger_${Date.now()}.xlsx`);
+        showToast("Exported Applicant Ledger to Excel (.xlsx)", "success");
+      };
+
+      return (
+        <div className="flex h-screen overflow-hidden bg-slate-50">
+          {/* Sidebar */}
+          <Sidebar 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            applicantsCount={applicants.length}
+            backendConnected={backendConnected}
+          />
+
+          {/* Main Area */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <Header 
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              backendConnected={backendConnected}
+              onQuickUpload={() => setActiveTab("upload")}
+              onExportCSV={handleExportCSV}
+              onExportExcel={handleExportExcel}
+            />
+
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+              {activeTab === "ledger" && (
+                <ApplicantLedgerView 
+                  applicants={filteredApplicants}
+                  totalCount={applicants.length}
+                  selectedIds={selectedApplicantIds}
+                  setSelectedIds={setSelectedApplicantIds}
+                  onViewProfile={(app) => { setSelectedApplicant(app); setIsEditModalOpen(false); }}
+                  onEditApplicant={(app) => { setSelectedApplicant(app); setIsEditModalOpen(true); }}
+                  onDeleteApplicant={handleDeleteApplicant}
+                  onStatusChange={handleStatusChange}
+                  onDepartmentChange={handleDepartmentChange}
+                  onBulkStatusChange={handleBulkStatusChange}
+                  onBulkDelete={handleBulkDelete}
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                  departmentFilter={departmentFilter}
+                  setDepartmentFilter={setDepartmentFilter}
+                  cityFilter={cityFilter}
+                  setCityFilter={setCityFilter}
+                  availableCities={availableCities}
+                  onExportCSV={handleExportCSV}
+                  onExportExcel={handleExportExcel}
+                />
+              )}
+
+              {activeTab === "dashboard" && (
+                <DashboardView 
+                  stats={dashboardStats} 
+                  applicants={applicants}
+                  onViewProfile={(app) => { setSelectedApplicant(app); setIsEditModalOpen(false); }}
+                  onStatusChange={handleStatusChange}
+                  onGoToUpload={() => setActiveTab("upload")}
+                  onGoToLedger={() => setActiveTab("ledger")}
+                />
+              )}
+
+              {activeTab === "upload" && (
+                <ResumeUploadView 
+                  backendConnected={backendConnected}
+                  existingApplicants={applicants}
+                  processingLogs={processingLogs}
+                  setProcessingLogs={setProcessingLogs}
+                  onApplicantAdded={(newApp) => {
+                    setApplicants(prev => [newApp, ...prev]);
+                    showToast(`Candidate ${newApp.applicant} added with ID ${newApp.applicant_id}!`, "success");
+                  }}
+                  showToast={showToast}
+                />
+              )}
+
+              {activeTab === "analytics" && (
+                <AnalyticsView applicants={applicants} />
+              )}
+
+              {activeTab === "settings" && (
+                <SettingsView 
+                  applicants={applicants}
+                  setApplicants={setApplicants}
+                  backendConnected={backendConnected}
+                  showToast={showToast}
+                />
+              )}
+            </main>
+          </div>
+
+          {/* Profile Modal */}
+          {selectedApplicant && (
+            <ApplicantProfileModal 
+              applicant={selectedApplicant}
+              isEditMode={isEditModalOpen}
+              setIsEditMode={setIsEditModalOpen}
+              onClose={() => setSelectedApplicant(null)}
+              onStatusChange={handleStatusChange}
+              onDepartmentChange={handleDepartmentChange}
+              onSaveApplicant={(updated) => {
+                setApplicants(prev => prev.map(a => a.id === updated.id ? updated : a));
+                setSelectedApplicant(updated);
+                setIsEditModalOpen(false);
+                showToast("Candidate details updated successfully", "success");
+                if (backendConnected) {
+                  fetch(`${API_BASE}/api/applicants/${updated.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(updated)
+                  }).catch(console.error);
+                }
+              }}
+            />
+          )}
+
+          {/* Toast */}
+          {toast && (
+            <div className="fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 bg-slate-900 text-white text-sm font-medium rounded-xl shadow-2xl border border-slate-700 animate-bounce">
+              <span className={`w-2 h-2 rounded-full ${toast.type === "error" ? "bg-rose-500" : toast.type === "info" ? "bg-blue-400" : "bg-emerald-400"}`}></span>
+              <span>{toast.message}</span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Sidebar
+    function Sidebar({ activeTab, setActiveTab, applicantsCount, backendConnected }) {
+      const navItems = [
+        { id: "ledger", label: "Applicant Ledger", badge: applicantsCount, icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
+        { id: "dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+        { id: "upload", label: "Resume Upload", icon: "M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" },
+        { id: "analytics", label: "Analytics & Reports", icon: "M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" },
+        { id: "settings", label: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" }
+      ];
+
+      return (
+        <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 hidden md:flex text-slate-300">
+          <div>
+            <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800/80 bg-slate-950/40">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 font-black font-mono">
+                AL
+              </div>
+              <div>
+                <span className="font-bold text-base text-white tracking-tight">Applicant Ledger</span>
+                <span className="block text-[10px] font-semibold tracking-wider uppercase text-indigo-400">Sequential (A001+)</span>
+              </div>
+            </div>
+
+            <nav className="p-3 space-y-1">
+              {navItems.map(item => {
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      isActive 
+                        ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30" 
+                        : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d={item.icon} />
+                      </svg>
+                      <span>{item.label}</span>
+                    </div>
+                    {item.badge !== undefined && (
+                      <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        isActive ? "bg-indigo-800 text-indigo-100" : "bg-slate-800 text-slate-300"
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          <div className="p-4 border-t border-slate-800/80 bg-slate-950/40">
+            <div className="flex items-center justify-between mb-2 text-xs">
+              <span className="text-slate-400 font-medium">Server API</span>
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                backendConnected ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/50" : "bg-amber-950/60 text-amber-400 border border-amber-800/50"
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${backendConnected ? "bg-emerald-400" : "bg-amber-400"}`}></span>
+                {backendConnected ? "FastAPI Online" : "Client Offline"}
+              </span>
+            </div>
+            <div className="text-[11px] text-slate-500 font-mono">
+              Series: A001 - A999 (Rolls over to B001)
+            </div>
+          </div>
+        </aside>
+      );
+    }
+
+    // Header
+    function Header({ searchQuery, setSearchQuery, backendConnected, onQuickUpload, onExportCSV, onExportExcel }) {
+      return (
+        <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-8 flex items-center justify-between shrink-0">
+          <div className="relative w-72 md:w-96">
+            <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by ID (A001), name, dept, skill, city..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="hidden sm:flex items-center gap-1.5">
+              <button 
+                onClick={onExportCSV}
+                title="Export Ledger to CSV"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+              >
+                CSV
+              </button>
+              <button 
+                onClick={onExportExcel}
+                title="Export Ledger to Excel (.xlsx)"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors shadow-sm"
+              >
+                Excel (.xlsx)
+              </button>
+            </div>
+
+            <button 
+              onClick={onQuickUpload}
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs md:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-sm shadow-indigo-600/30"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Upload Resumes</span>
+            </button>
+          </div>
+        </header>
+      );
+    }
+
+    // Applicant Ledger Table View matching requested specifications
+    function ApplicantLedgerView({
+      applicants,
+      totalCount,
+      selectedIds,
+      setSelectedIds,
+      onViewProfile,
+      onEditApplicant,
+      onDeleteApplicant,
+      onStatusChange,
+      onDepartmentChange,
+      onBulkStatusChange,
+      onBulkDelete,
+      statusFilter,
+      setStatusFilter,
+      departmentFilter,
+      setDepartmentFilter,
+      cityFilter,
+      setCityFilter,
+      availableCities,
+      onExportCSV,
+      onExportExcel
+    }) {
+      const [sortField, setSortField] = useState("applicant_id");
+      const [sortDirection, setSortDirection] = useState("asc");
+      const [currentPage, setCurrentPage] = useState(1);
+      const itemsPerPage = 12;
+
+      const allSelected = applicants.length > 0 && selectedIds.length === applicants.length;
+      const toggleSelectAll = () => {
+        if (allSelected) setSelectedIds([]);
+        else setSelectedIds(applicants.map(a => a.id));
+      };
+
+      const toggleSelectOne = (id) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+      };
+
+      const sortedApplicants = useMemo(() => {
+        return [...applicants].sort((a, b) => {
+          let aVal = a[sortField] || "";
+          let bVal = b[sortField] || "";
+          if (typeof aVal === "string") aVal = aVal.toLowerCase();
+          if (typeof bVal === "string") bVal = bVal.toLowerCase();
+          if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+          if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+          return 0;
+        });
+      }, [applicants, sortField, sortDirection]);
+
+      const paginatedApplicants = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return sortedApplicants.slice(start, start + itemsPerPage);
+      }, [sortedApplicants, currentPage]);
+
+      const totalPages = Math.ceil(applicants.length / itemsPerPage) || 1;
+
+      const handleSort = (field) => {
+        if (sortField === field) {
+          setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+        } else {
+          setSortField(field);
+          setSortDirection("asc");
+        }
+      };
+
+      return (
+        <div className="space-y-4 max-w-full">
+          {/* Filter Bar */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <span className="font-bold text-slate-500 uppercase tracking-wider">Filters:</span>
+
+              {/* Department Filter */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-600 font-medium">Department:</span>
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  <option value="All">All Departments ({DEPARTMENTS.length})</option>
+                  {DEPARTMENTS.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-600 font-medium">Status:</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  <option value="All">All Statuses</option>
+                  {STATUS_OPTIONS.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* City Filter */}
+              {availableCities.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-600 font-medium">City:</span>
+                  <select
+                    value={cityFilter}
+                    onChange={(e) => setCityFilter(e.target.value)}
+                    className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  >
+                    <option value="All">All Cities</option>
+                    {availableCities.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {(statusFilter !== "All" || departmentFilter !== "All" || cityFilter !== "All") && (
+                <button
+                  onClick={() => { setStatusFilter("All"); setDepartmentFilter("All"); setCityFilter("All"); }}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline ml-1"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500">
+                Showing <strong>{applicants.length}</strong> of {totalCount}
+              </span>
+              <button
+                onClick={onExportCSV}
+                className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                CSV
+              </button>
+              <button
+                onClick={onExportExcel}
+                className="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+              >
+                Excel (.xlsx)
+              </button>
+            </div>
+          </div>
+
+          {/* Bulk Action Bar */}
+          {selectedIds.length > 0 && (
+            <div className="bg-indigo-50 border border-indigo-200 p-3 rounded-xl flex items-center justify-between text-xs animate-fadeIn">
+              <div className="flex items-center gap-2 text-indigo-900 font-semibold">
+                <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">
+                  {selectedIds.length}
+                </span>
+                <span>Applicants selected</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  onChange={(e) => { if (e.target.value) onBulkStatusChange(e.target.value); }}
+                  defaultValue=""
+                  className="px-2.5 py-1 bg-white border border-indigo-300 rounded-lg text-slate-800 text-xs font-medium focus:outline-none"
+                >
+                  <option value="" disabled>Update Status...</option>
+                  {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <button
+                  onClick={onBulkDelete}
+                  className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  Delete Selected
+                </button>
+                <button
+                  onClick={() => setSelectedIds([])}
+                  className="text-slate-500 hover:text-slate-700 font-medium px-2 py-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Centralized Applicant Ledger Table */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider select-none text-[11px]">
+                    <th className="p-3 w-10 text-center">
+                      <input 
+                        type="checkbox" 
+                        checked={allSelected} 
+                        onChange={toggleSelectAll} 
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      />
+                    </th>
+                    <th className="p-3 cursor-pointer hover:bg-slate-200/60" onClick={() => handleSort("applicant_id")}>
+                      <div className="flex items-center gap-1 font-mono">
+                        <span>Applicant ID</span>
+                        {sortField === "applicant_id" && <span>{sortDirection === "asc" ? "▲" : "▼"}</span>}
+                      </div>
+                    </th>
+                    <th className="p-3 cursor-pointer hover:bg-slate-200/60" onClick={() => handleSort("applicant")}>
+                      <div className="flex items-center gap-1">
+                        <span>Applicant</span>
+                        {sortField === "applicant" && <span>{sortDirection === "asc" ? "▲" : "▼"}</span>}
+                      </div>
+                    </th>
+                    <th className="p-3 cursor-pointer hover:bg-slate-200/60" onClick={() => handleSort("designation")}>
+                      <div className="flex items-center gap-1">
+                        <span>Designation</span>
+                        {sortField === "designation" && <span>{sortDirection === "asc" ? "▲" : "▼"}</span>}
+                      </div>
+                    </th>
+                    <th className="p-3 cursor-pointer hover:bg-slate-200/60" onClick={() => handleSort("department")}>
+                      <div className="flex items-center gap-1">
+                        <span>Department</span>
+                        {sortField === "department" && <span>{sortDirection === "asc" ? "▲" : "▼"}</span>}
+                      </div>
+                    </th>
+                    <th className="p-3">Email</th>
+                    <th className="p-3">Contact No.</th>
+                    <th className="p-3">DOB</th>
+                    <th className="p-3">City</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3 max-w-xs">Remarks</th>
+                    <th className="p-3">Skills</th>
+                    <th className="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedApplicants.length === 0 ? (
+                    <tr>
+                      <td colSpan="13" className="py-12 text-center text-slate-400">
+                        <div className="flex flex-col items-center justify-center">
+                          <p className="font-semibold text-slate-600">No applicant records match criteria</p>
+                          <p className="text-xs text-slate-400 mt-1">Try clearing filters or search keywords.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedApplicants.map(app => {
+                      const isSelected = selectedIds.includes(app.id);
+                      const deptBadge = DEPT_BADGES[app.department] || DEPT_BADGES["Others"];
+                      return (
+                        <tr 
+                          key={app.id} 
+                          className={`hover:bg-indigo-50/40 transition-colors ${isSelected ? "bg-indigo-50/60" : ""}`}
+                        >
+                          <td className="p-3 text-center">
+                            <input 
+                              type="checkbox" 
+                              checked={isSelected} 
+                              onChange={() => toggleSelectOne(app.id)}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            />
+                          </td>
+                          {/* Sequential ID Starting at A001 */}
+                          <td className="p-3 font-mono font-bold text-indigo-700 whitespace-nowrap text-sm">
+                            {app.applicant_id}
+                          </td>
+                          {/* Candidate Full Name */}
+                          <td className="p-3 font-semibold text-slate-900 whitespace-nowrap">
+                            <button
+                              onClick={() => onViewProfile(app)}
+                              className="hover:text-indigo-600 hover:underline text-left font-bold"
+                            >
+                              {app.applicant || <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono text-[10px]">NA</span>}
+                            </button>
+                          </td>
+                          {/* Designation */}
+                          <td className="p-3 font-medium text-slate-800 whitespace-nowrap">
+                            {app.designation || <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono text-[10px]">NA</span>}
+                          </td>
+                          {/* Department */}
+                          <td className="p-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md font-semibold text-[11px] border ${deptBadge.bg} ${deptBadge.text} ${deptBadge.border}`}>
+                              {app.department || "Others"}
+                            </span>
+                          </td>
+                          {/* Email */}
+                          <td className="p-3 text-slate-600 truncate max-w-[150px]" title={app.email}>
+                            {app.email || <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono text-[10px]">NA</span>}
+                          </td>
+                          {/* Contact No. */}
+                          <td className="p-3 text-slate-600 whitespace-nowrap font-mono text-[11px]">
+                            {app.contact_no || <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono text-[10px]">NA</span>}
+                          </td>
+                          {/* DOB */}
+                          <td className="p-3 text-slate-600 whitespace-nowrap font-mono text-[11px]">
+                            {app.dob || <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono text-[10px]">NA</span>}
+                          </td>
+                          {/* City */}
+                          <td className="p-3 text-slate-700 whitespace-nowrap">
+                            {app.city || <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono text-[10px]">NA</span>}
+                          </td>
+                          {/* Status */}
+                          <td className="p-3 whitespace-nowrap">
+                            <StatusBadge 
+                              status={app.status || "New Application"} 
+                              interactive={true} 
+                              onSelectStatus={(newStatus) => onStatusChange(app.id, newStatus)} 
+                            />
+                          </td>
+                          {/* Remarks */}
+                          <td className="p-3 text-slate-600 max-w-xs truncate" title={app.remarks}>
+                            {app.remarks || <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono text-[10px]">NA</span>}
+                          </td>
+                          {/* Skills */}
+                          <td className="p-3">
+                            <div className="flex flex-wrap gap-1 max-w-[180px]">
+                              {(app.skills && app.skills.length > 0) ? (
+                                <>
+                                  {app.skills.slice(0, 2).map((s, i) => (
+                                    <span key={i} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                      {s.skill_name || s}
+                                    </span>
+                                  ))}
+                                  {app.skills.length > 2 && (
+                                    <span className="px-1 py-0.5 rounded text-[10px] text-slate-500 font-medium">
+                                      +{app.skills.length - 2}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono text-[10px]">NA</span>
+                              )}
+                            </div>
+                          </td>
+                          {/* Actions */}
+                          <td className="p-3 text-right whitespace-nowrap space-x-1">
+                            <button
+                              onClick={() => onViewProfile(app)}
+                              title="View Candidate Profile"
+                              className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => onEditApplicant(app)}
+                              title="Edit Candidate Details"
+                              className="p-1 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => onDeleteApplicant(app.id, app.applicant)}
+                              title="Delete Record"
+                              className="p-1 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
+              <span>
+                Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({applicants.length} total applicants)
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-2.5 py-1 bg-white border border-slate-200 rounded font-medium disabled:opacity-40 hover:bg-slate-100"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-2.5 py-1 bg-white border border-slate-200 rounded font-medium disabled:opacity-40 hover:bg-slate-100"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Status Badge Component
+    function StatusBadge({ status, interactive = false, onSelectStatus }) {
+      const config = STATUS_CONFIG[status] || STATUS_CONFIG["New Application"];
+      const [isOpen, setIsOpen] = useState(false);
+
+      if (!interactive) {
+        return (
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config.bg} ${config.text} ${config.border}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`}></span>
+            {status}
+          </span>
+        );
+      }
+
+      return (
+        <div className="relative inline-block text-left">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config.bg} ${config.text} ${config.border} hover:opacity-90 transition-all`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`}></span>
+            <span>{status}</span>
+            <svg className="w-3 h-3 ml-0.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {isOpen && (
+            <div 
+              className="origin-top-left absolute left-0 mt-1.5 w-48 rounded-xl shadow-xl bg-white border border-slate-200 ring-1 ring-black ring-opacity-5 z-40 p-1.5 focus:outline-none"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {STATUS_OPTIONS.map(opt => {
+                const optConfig = STATUS_CONFIG[opt];
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => { onSelectStatus(opt); setIsOpen(false); }}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-lg text-slate-700 hover:bg-slate-100 transition-colors ${
+                      opt === status ? "bg-slate-100 font-bold" : ""
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${optConfig.dot}`}></span>
+                    <span>{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Dashboard View
+    function DashboardView({ stats, applicants, onViewProfile, onStatusChange, onGoToUpload, onGoToLedger }) {
+      const kpis = [
+        { label: "Total Applicants", value: stats.total, color: "text-slate-900", bg: "bg-white", border: "border-slate-200" },
+        { label: "New Applicants", value: stats.newApp, color: "text-blue-600", bg: "bg-blue-50/50", border: "border-blue-200" },
+        { label: "Under Review", value: stats.underRev, color: "text-amber-600", bg: "bg-amber-50/50", border: "border-amber-200" },
+        { label: "Shortlisted", value: stats.short, color: "text-purple-600", bg: "bg-purple-50/50", border: "border-purple-200" },
+        { label: "Interview Scheduled", value: stats.interview, color: "text-cyan-600", bg: "bg-cyan-50/50", border: "border-cyan-200" },
+        { label: "Selected", value: stats.selected, color: "text-emerald-600", bg: "bg-emerald-50/50", border: "border-emerald-200" },
+        { label: "Rejected", value: stats.rejected, color: "text-rose-600", bg: "bg-rose-50/50", border: "border-rose-200" },
+      ];
+
+      const deptCounts = useMemo(() => {
+        const counts = {};
+        DEPARTMENTS.forEach(d => counts[d] = 0);
+        applicants.forEach(a => {
+          const d = a.department || "Others";
+          counts[d] = (counts[d] || 0) + 1;
+        });
+        return counts;
+      }, [applicants]);
+
+      return (
+        <div className="space-y-6 max-w-7xl mx-auto">
+          {/* Header Banner */}
+          <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 md:p-8 text-white shadow-xl flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 mb-2">
+                Series: Starting at A001
+              </span>
+              <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">Applicant Intake & Ledger</h2>
+              <p className="mt-1 text-xs md:text-sm text-slate-300">
+                11 Department Routing (Front office, Kitchen, Service, Account, Maintenance, Sales, Admin, Housekeeping, Stores, Purchase, Others)
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button 
+                onClick={onGoToUpload}
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs md:text-sm font-semibold transition-all shadow-md shadow-indigo-600/40"
+              >
+                Upload Resumes
+              </button>
+              <button 
+                onClick={onGoToLedger}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs md:text-sm font-semibold border border-slate-700 transition-all"
+              >
+                Open Ledger Table
+              </button>
+            </div>
+          </div>
+
+          {/* 7 KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+            {kpis.map((kpi, idx) => (
+              <div key={idx} className={`${kpi.bg} p-4 rounded-xl border ${kpi.border} shadow-sm`}>
+                <span className="block text-xs font-semibold text-slate-600 truncate">{kpi.label}</span>
+                <span className={`text-2xl md:text-3xl font-extrabold mt-1 block ${kpi.color}`}>{kpi.value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Department Breakdown Grid */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 className="font-bold text-base text-slate-900 mb-1">Applicants by Department</h3>
+            <p className="text-xs text-slate-500 mb-5">Live tally across the 11 candidate departments</p>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {DEPARTMENTS.map(dept => {
+                const count = deptCounts[dept] || 0;
+                const badge = DEPT_BADGES[dept];
+                return (
+                  <div key={dept} className={`p-3 rounded-xl border ${badge.bg} ${badge.border} flex flex-col justify-between`}>
+                    <span className="text-xs font-semibold text-slate-700 truncate">{dept}</span>
+                    <span className={`text-xl font-bold mt-2 ${badge.text}`}>{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Resume Upload View
+    function ResumeUploadView({ backendConnected, existingApplicants, processingLogs, setProcessingLogs, onApplicantAdded, showToast }) {
+      const [dragOver, setDragOver] = useState(false);
+      const [targetDept, setTargetDept] = useState("");
+      const [uploadQueue, setUploadQueue] = useState([]);
+      const [isProcessing, setIsProcessing] = useState(false);
+      const fileInputRef = useRef(null);
+
+      const handleFiles = async (filesList) => {
+        const files = Array.from(filesList);
+        if (files.length === 0) return;
+
+        const newQueueItems = files.map(file => ({
+          file,
+          filename: file.name,
+          size: file.size,
+          status: "Queued",
+          progress: 0,
+          id: Math.random().toString(36).substring(7)
+        }));
+
+        setUploadQueue(prev => [...prev, ...newQueueItems]);
+        processQueue(newQueueItems);
+      };
+
+      const processQueue = async (items) => {
+        setIsProcessing(true);
+        let currentApplicantsList = [...existingApplicants];
+
+        for (const item of items) {
+          setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "Processing", progress: 50 } : q));
+
+          if (backendConnected) {
+            try {
+              const formData = new FormData();
+              formData.append("files", item.file);
+              if (targetDept.trim()) formData.append("department", targetDept.trim());
+
+              const response = await fetch(`${API_BASE}/api/upload/resumes`, {
+                method: "POST",
+                body: formData
+              });
+
+              if (response.ok) {
+                const resData = await response.json();
+                const result = resData.results[0];
+
+                if (result.status === "Completed") {
+                  setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "Completed", progress: 100 } : q));
+                  const appRes = await fetch(`${API_BASE}/api/applicants/${result.id}`);
+                  if (appRes.ok) {
+                    const fullApp = await appRes.json();
+                    currentApplicantsList = [fullApp, ...currentApplicantsList];
+                    onApplicantAdded(fullApp);
+                  }
+                } else if (result.status === "Duplicate") {
+                  setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "Duplicate", progress: 100, error: result.message } : q));
+                  showToast(result.message, "warning");
+                } else {
+                  setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "Failed", progress: 100, error: result.error } : q));
+                  showToast(`Extraction failed for ${item.filename}`, "error");
+                }
+              }
+            } catch (err) {
+              setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "Failed", progress: 100, error: err.message } : q));
+            }
+          } else {
+            // Client-Side In-Browser Mode
+            try {
+              let text = "";
+              const ext = item.filename.split('.').pop().toLowerCase();
+
+              if (ext === "pdf") {
+                const arrayBuffer = await item.file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = "";
+                for (let i = 1; i <= pdf.numPages; i++) {
+                  const page = await pdf.getPage(i);
+                  const content = await page.getTextContent();
+                  fullText += content.items.map(it => it.str).join(" ") + "\n";
+                }
+                text = fullText;
+              } else if (ext === "docx") {
+                const arrayBuffer = await item.file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                text = result.value;
+              } else {
+                text = await item.file.text();
+              }
+
+              const extracted = extractLocalResumeDetails(text, item.filename, targetDept);
+
+              // Generate sequential ID starting from A001
+              const nextId = getNextApplicantId(currentApplicantsList);
+
+              const newApp = {
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                applicant_id: nextId,
+                ...extracted,
+                department: targetDept || extracted.department || "Others",
+                resume_filename: item.filename,
+                uploaded_at: new Date().toISOString()
+              };
+
+              currentApplicantsList = [newApp, ...currentApplicantsList];
+              setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "Completed", progress: 100 } : q));
+              onApplicantAdded(newApp);
+
+              setProcessingLogs(prev => [{
+                id: Date.now(),
+                resume_filename: item.filename,
+                file_size_bytes: item.size,
+                status: "Completed",
+                duration_ms: 220,
+                created_at: new Date().toISOString()
+              }, ...prev]);
+
+            } catch (err) {
+              setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "Failed", progress: 100, error: err.message } : q));
+              setProcessingLogs(prev => [{
+                id: Date.now(),
+                resume_filename: item.filename,
+                file_size_bytes: item.size,
+                status: "Failed",
+                error_message: err.message,
+                duration_ms: 100,
+                created_at: new Date().toISOString()
+              }, ...prev]);
+            }
+          }
+        }
+        setIsProcessing(false);
+      };
+
+      return (
+        <div className="space-y-6 max-w-5xl mx-auto">
+          {/* Pre-assign Department Dropdown */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Department Routing (Optional)</h3>
+              <p className="text-xs text-slate-500">Auto-assigns to uploaded resumes if not specified inside the resume.</p>
+            </div>
+            <select
+              value={targetDept}
+              onChange={(e) => setTargetDept(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            >
+              <option value="">Auto-Detect Department</option>
+              {DEPARTMENTS.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Dropzone */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+            onClick={() => fileInputRef.current.click()}
+            className={`border-2 border-dashed rounded-3xl p-8 md:p-12 text-center cursor-pointer transition-all bg-white ${
+              dragOver ? "border-indigo-500 bg-indigo-50/50 scale-[1.01]" : "border-slate-300 hover:border-indigo-400 hover:bg-slate-50/60"
+            }`}
+          >
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              multiple 
+              accept=".pdf,.docx,.doc,.txt,.rtf" 
+              className="hidden" 
+              onChange={(e) => handleFiles(e.target.files)}
+            />
+
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+
+            <h3 className="text-base md:text-lg font-bold text-slate-900">
+              Drag and drop candidate resumes here
+            </h3>
+            <p className="text-xs md:text-sm text-slate-500 mt-1 max-w-md mx-auto">
+              Extracts Applicant, Designation, Department, Email, Contact No., DOB, City, Remarks, and Skills. Missing items are stored as NULL / NA.
+            </p>
+
+            <div className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs md:text-sm font-semibold shadow-md shadow-indigo-600/30">
+              <span>Browse Files on Computer</span>
+            </div>
+
+            <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-slate-400 font-medium">
+              <span>✓ Sequential IDs (A001+)</span>
+              <span>✓ Strict Factuality (No invented data)</span>
+              <span>✓ Duplicate Detection</span>
+            </div>
+          </div>
+
+          {/* Queue */}
+          {uploadQueue.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
+              <h4 className="text-sm font-bold text-slate-900">Upload Processing Queue ({uploadQueue.length})</h4>
+              <div className="space-y-2">
+                {uploadQueue.map(item => (
+                  <div key={item.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between gap-4 text-xs">
+                    <span className="font-semibold text-slate-900 truncate">{item.filename}</span>
+                    <span className={`px-2 py-0.5 rounded-full font-semibold text-[10px] ${
+                      item.status === "Completed" ? "bg-emerald-50 text-emerald-700" :
+                      item.status === "Duplicate" ? "bg-amber-50 text-amber-700" :
+                      item.status === "Processing" ? "text-indigo-600" : "bg-rose-50 text-rose-700"
+                    }`}>
+                      {item.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Client-side Strict NLP Parser (Extracts strictly only what is in the resume)
+    function extractLocalResumeDetails(text, filename, preselectedDept) {
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      const textLower = " " + text.toLowerCase() + " ";
+
+      // 1. Email Address
+      const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      const email = emailMatch ? emailMatch[0].toLowerCase() : null;
+
+      // 2. Contact No. (Phone)
+      const phoneMatch = text.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\+?\d{1,3}[-.\s]?\d{5}[-.\s]?\d{5}|\b\d{10}\b/);
+      const contactNo = phoneMatch ? phoneMatch[0].trim() : null;
+
+      // 3. Applicant Full Name
+      let name = null;
+      const nameLabelMatch = text.match(/^(?:Name|Full\s*Name|Candidate\s*Name|Applicant)\s*[:\-]\s*([A-Za-z\s.'-]+)/im);
+      if (nameLabelMatch) {
+        name = nameLabelMatch[1].trim();
+      } else {
+        const blacklist = ["resume", "curriculum", "vitae", "cv", "profile", "contact", "email", "phone", "experience", "education", "skills", "summary"];
+        for (let i = 0; i < Math.min(lines.length, 5); i++) {
+          const l = lines[i];
+          if (l.includes("@") || l.includes("http") || l.length > 45) continue;
+          if (blacklist.some(term => l.toLowerCase().includes(term))) continue;
+          const words = l.split(/\s+/);
+          if (words.length >= 1 && words.length <= 4 && words.every(w => /^[A-Za-z.'-]+$/.test(w))) {
+            name = l.trim();
+            break;
+          }
+        }
+      }
+      if (!name && filename) {
+        const cleanName = filename.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        const words = cleanName.split(" ").filter(w => !["resume", "cv", "pdf", "docx", "txt"].includes(w.toLowerCase()));
+        if (words.length >= 2) {
+          name = words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+        }
+      }
+
+      // 4. Date of Birth (DOB)
+      let dob = null;
+      const dobMatch = text.match(/(?:Date\s*of\s*Birth|DOB|Birth\s*Date|D\.O\.B\.?)\s*[:\-]\s*([0-9]{1,2}[-/.][0-9]{1,2}[-/.][0-9]{2,4}|[0-9]{1,2}\s+[A-Za-z]{3,9}\s+[0-9]{4}|[A-Za-z]{3,9}\s+[0-9]{1,2},?\s+[0-9]{4})/i);
+      if (dobMatch) {
+        dob = dobMatch[1].trim();
+      }
+
+      // 5. City / Location
+      let city = null;
+      const cityMatch = text.match(/(?:City|Location|Address|Current\s*Location|Place|Residing\s*in)\s*[:\-]\s*([^\n\r,]+(?:,[^\n\r]+)?)/i);
+      if (cityMatch) {
+        const cVal = cityMatch[1].trim();
+        if (cVal.length < 50 && !cVal.includes("@")) city = cVal;
+      }
+      if (!city) {
+        const commonCities = ["Mumbai", "Delhi", "Bangalore", "Pune", "Hyderabad", "Chennai", "Kolkata", "Ahmedabad", "Goa", "Jaipur", "San Francisco", "Seattle", "Austin", "London"];
+        for (let i = 0; i < Math.min(lines.length, 5); i++) {
+          if (/university|college/i.test(lines[i])) continue;
+          for (const c of commonCities) {
+            const reg = new RegExp("\\b" + c + "(?:\\s*,\\s*[A-Za-z\\s]+)?\\b", "i");
+            const cm = lines[i].match(reg);
+            if (cm) { city = cm[0].trim(); break; }
+          }
+          if (city) break;
+        }
+      }
+
+      // 6. Designation
+      let designation = null;
+      const desigMatch = text.match(/(?:Current\s*Designation|Designation|Current\s*Role|Position|Applied\s*For|Role|Target\s*Role|Applying\s*for)\s*[:\-]\s*([^\n\r]+)/i);
+      if (desigMatch) {
+        designation = desigMatch[1].trim();
+      }
+
+      // 7. Department (Front office, Kitchen, Service, Account, Maintenance, Sales, Admin, Housekeeping, Stores, Purchase, Others)
+      let department = preselectedDept || "Others";
+      const deptExplicit = text.match(/(?:DEPARTMENT|Department|Dept)\s*[:\-]\s*([A-Za-z\s/&]+)/i);
+      if (deptExplicit) {
+        const dStr = deptExplicit[1].toLowerCase();
+        if (/front|reception/i.test(dStr)) department = "Front office";
+        else if (/kitchen|culinary|chef/i.test(dStr)) department = "Kitchen";
+        else if (/service|f&b|steward/i.test(dStr)) department = "Service";
+        else if (/account|finance/i.test(dStr)) department = "Account";
+        else if (/maintenance|electric/i.test(dStr)) department = "Maintenance";
+        else if (/sales|marketing/i.test(dStr)) department = "Sales";
+        else if (/admin|hr|engineer|software/i.test(dStr)) department = "Admin";
+        else if (/housekeeping/i.test(dStr)) department = "Housekeeping";
+        else if (/store|inventory/i.test(dStr)) department = "Stores";
+        else if (/purchase|procurement/i.test(dStr)) department = "Purchase";
+      } else {
+        const combined = `${designation || ''} ${text.slice(0, 1500)}`.toLowerCase();
+        if (/front office|receptionist|front desk|guest relations/i.test(combined)) department = "Front office";
+        else if (/chef|sous chef|cook|culinary|commis|kitchen/i.test(combined)) department = "Kitchen";
+        else if (/service|waiter|captain|f&b|banquet|bartender/i.test(combined)) department = "Service";
+        else if (/accountant|accounts|finance|tally|ledger/i.test(combined)) department = "Account";
+        else if (/maintenance|electrician|hvac|plumbing/i.test(combined)) department = "Maintenance";
+        else if (/sales|business development|b2b/i.test(combined)) department = "Sales";
+        else if (/housekeeping|room inspection|linen/i.test(combined)) department = "Housekeeping";
+        else if (/store keeper|stores|stock auditing|warehouse/i.test(combined)) department = "Stores";
+        else if (/purchase|procurement|supply chain|buyer/i.test(combined)) department = "Purchase";
+        else if (/admin|hr officer|human resources|recruiter|software|developer/i.test(combined)) department = "Admin";
+      }
+
+      // 8. Remarks
+      let remarks = null;
+      const remMatch = text.match(/(?:REMARKS|Remarks|Notes|Comments|Screener\s*Remarks)\s*[:\-]\s*([^\n\r]+)/i);
+      if (remMatch) {
+        remarks = remMatch[1].trim();
+      } else {
+        for (let i = 0; i < lines.length; i++) {
+          if (/^(?:PROFESSIONAL SUMMARY|SUMMARY|CAREER OBJECTIVE|OBJECTIVE)\b/i.test(lines[i])) {
+            if (i + 1 < lines.length && lines[i + 1].length > 15) {
+              remarks = lines[i + 1].trim().slice(0, 160);
+              break;
+            }
+          }
+        }
+      }
+
+      // 9. Skills
+      const SKILL_LIST = [
+        "OPERA PMS", "Micros POS", "Guest Relations", "Customer Service", "Front Desk",
+        "Culinary Arts", "HACCP", "Food Safety", "F&B Service", "Banquet", "Tally Prime",
+        "GST", "MS Excel", "Ledger", "HVAC", "Electrical", "Plumbing", "B2B Sales", "CRM",
+        "Client Retention", "Recruitment", "Payroll", "Operations", "Room Inspection",
+        "Inventory", "Linen Management", "Stock Auditing", "Purchase", "Warehouse",
+        "Procurement", "Supply Chain", "Vendor Management", "Python", "JavaScript", "SQL", "React", "Docker", "AWS"
+      ];
+      const extractedSkills = [];
+      SKILL_LIST.forEach((sk, idx) => {
+        const escaped = sk.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const reg = new RegExp('(?<![a-zA-Z0-9#+])' + escaped + '(?![a-zA-Z0-9#+])', 'i');
+        if (reg.test(textLower)) {
+          extractedSkills.push({ id: idx + 1, skill_name: sk });
+        }
+      });
+
+      return {
+        applicant: name || "NA",
+        designation: designation || null,
+        department: department,
+        email: email || null,
+        contact_no: contactNo || null,
+        dob: dob || null,
+        city: city || null,
+        status: "New Application",
+        remarks: remarks || null,
+        skills: extractedSkills
+      };
+    }
+
+    // Analytics View
+    function AnalyticsView({ applicants }) {
+      const deptCounts = useMemo(() => {
+        const counts = {};
+        DEPARTMENTS.forEach(d => counts[d] = 0);
+        applicants.forEach(a => counts[a.department || "Others"] = (counts[a.department || "Others"] || 0) + 1);
+        return counts;
+      }, [applicants]);
+
+      const statusCounts = useMemo(() => {
+        const counts = {};
+        STATUS_OPTIONS.forEach(s => counts[s] = 0);
+        applicants.forEach(a => counts[a.status || "New Application"] = (counts[a.status || "New Application"] || 0) + 1);
+        return counts;
+      }, [applicants]);
+
+      return (
+        <div className="space-y-6 max-w-7xl mx-auto">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Analytics & Department Metrics</h2>
+            <p className="text-xs text-slate-500">Breakdown of applicant intake across 11 departments and statuses.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <h3 className="text-sm font-bold text-slate-900 mb-4">Department Intake Distribution</h3>
+              <div className="space-y-2.5">
+                {DEPARTMENTS.map(dept => {
+                  const count = deptCounts[dept];
+                  const pct = Math.round((count / Math.max(applicants.length, 1)) * 100);
+                  const badge = DEPT_BADGES[dept];
+                  return (
+                    <div key={dept} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs font-medium">
+                        <span className="font-semibold text-slate-800">{dept}</span>
+                        <span className="text-slate-500">{count} ({pct}%)</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${pct}%` }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <h3 className="text-sm font-bold text-slate-900 mb-4">Application Status Pipeline</h3>
+              <div className="space-y-2.5">
+                {STATUS_OPTIONS.map(status => {
+                  const count = statusCounts[status];
+                  const pct = Math.round((count / Math.max(applicants.length, 1)) * 100);
+                  const config = STATUS_CONFIG[status];
+                  return (
+                    <div key={status} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs font-medium">
+                        <span className="flex items-center gap-1.5 font-semibold text-slate-800">
+                          <span className={`w-2 h-2 rounded-full ${config.dot}`}></span>
+                          {status}
+                        </span>
+                        <span className="text-slate-500">{count} ({pct}%)</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className={`h-full ${config.dot} rounded-full`} style={{ width: `${pct}%` }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Applicant Profile Modal
+    function ApplicantProfileModal({ applicant, isEditMode, setIsEditMode, onClose, onStatusChange, onDepartmentChange, onSaveApplicant }) {
+      const [formData, setFormData] = useState({ ...applicant });
+
+      useEffect(() => {
+        setFormData({ ...applicant });
+      }, [applicant]);
+
+      const handleFieldChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 animate-fadeIn">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-mono font-bold flex items-center justify-center text-lg shadow-md">
+                  {applicant.applicant_id}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">{formData.applicant}</h3>
+                  <p className="text-xs text-slate-500">{formData.designation || "Applicant"} • {formData.department}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsEditMode(!isEditMode)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors ${
+                    isEditMode ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300"
+                  }`}
+                >
+                  {isEditMode ? "Cancel Editing" : "✎ Edit Details"}
+                </button>
+                <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-300 text-slate-600 flex items-center justify-center">
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4 text-sm flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Applicant Name</label>
+                  {isEditMode ? (
+                    <input 
+                      type="text" 
+                      value={formData.applicant || ""} 
+                      onChange={(e) => handleFieldChange("applicant", e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                    />
+                  ) : (
+                    <p className="font-semibold text-slate-900 bg-slate-50 p-2.5 rounded-xl border border-slate-100">{formData.applicant || "NA"}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Designation</label>
+                  {isEditMode ? (
+                    <input 
+                      type="text" 
+                      value={formData.designation || ""} 
+                      onChange={(e) => handleFieldChange("designation", e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                    />
+                  ) : (
+                    <p className="font-semibold text-slate-900 bg-slate-50 p-2.5 rounded-xl border border-slate-100">{formData.designation || "NA"}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Department</label>
+                  {isEditMode ? (
+                    <select
+                      value={formData.department || "Others"}
+                      onChange={(e) => handleFieldChange("department", e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                    >
+                      {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  ) : (
+                    <p className="font-semibold text-slate-900 bg-slate-50 p-2.5 rounded-xl border border-slate-100">{formData.department || "Others"}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Application Status</label>
+                  {isEditMode ? (
+                    <select
+                      value={formData.status || "New Application"}
+                      onChange={(e) => handleFieldChange("status", e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                    >
+                      {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  ) : (
+                    <p className="font-semibold text-slate-900 bg-slate-50 p-2.5 rounded-xl border border-slate-100">{formData.status || "New Application"}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Email</label>
+                  {isEditMode ? (
+                    <input 
+                      type="email" 
+                      value={formData.email || ""} 
+                      onChange={(e) => handleFieldChange("email", e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                    />
+                  ) : (
+                    <p className="text-slate-800 bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-mono text-xs">{formData.email || "NA"}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Contact No.</label>
+                  {isEditMode ? (
+                    <input 
+                      type="text" 
+                      value={formData.contact_no || ""} 
+                      onChange={(e) => handleFieldChange("contact_no", e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                    />
+                  ) : (
+                    <p className="text-slate-800 bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-mono text-xs">{formData.contact_no || "NA"}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Date of Birth (DOB)</label>
+                  {isEditMode ? (
+                    <input 
+                      type="text" 
+                      value={formData.dob || ""} 
+                      onChange={(e) => handleFieldChange("dob", e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                    />
+                  ) : (
+                    <p className="text-slate-800 bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-mono text-xs">{formData.dob || "NA"}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">City</label>
+                  {isEditMode ? (
+                    <input 
+                      type="text" 
+                      value={formData.city || ""} 
+                      onChange={(e) => handleFieldChange("city", e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                    />
+                  ) : (
+                    <p className="text-slate-800 bg-slate-50 p-2.5 rounded-xl border border-slate-100">{formData.city || "NA"}</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Remarks</label>
+                {isEditMode ? (
+                  <textarea 
+                    value={formData.remarks || ""} 
+                    onChange={(e) => handleFieldChange("remarks", e.target.value)}
+                    rows="3"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                  />
+                ) : (
+                  <p className="text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100">{formData.remarks || "NA"}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-2">Skills</label>
+                <div className="flex flex-wrap gap-2">
+                  {(formData.skills && formData.skills.length > 0) ? (
+                    formData.skills.map((s, idx) => (
+                      <span key={idx} className="px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg text-xs font-semibold">
+                        {s.skill_name || s}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-slate-400 font-mono text-xs font-semibold">NA</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+              <span className="text-xs text-slate-400 font-mono">ID: {applicant.applicant_id}</span>
+              <div className="flex gap-2">
+                {isEditMode ? (
+                  <button onClick={() => onSaveApplicant(formData)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl">
+                    Save Changes
+                  </button>
+                ) : (
+                  <button onClick={onClose} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-xl">
+                    Close
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Settings View
+    function SettingsView({ applicants, setApplicants, backendConnected, showToast }) {
+      const handleResetDemoData = () => {
+        if (!confirm("Reset ledger to sequential A001 - A010 applicants?")) return;
+        setApplicants(INITIAL_APPLICANTS);
+        localStorage.setItem("applicant_ledger_v2", JSON.stringify(INITIAL_APPLICANTS));
+        showToast("Ledger reset to A001 - A010 sequential entries", "info");
+      };
+
+      const handleClearAll = () => {
+        if (!confirm("Clear all applicants?")) return;
+        setApplicants([]);
+        localStorage.setItem("applicant_ledger_v2", JSON.stringify([]));
+        showToast("Applicant ledger cleared", "warning");
+      };
+
+      return (
+        <div className="space-y-6 max-w-4xl mx-auto">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">System Settings</h2>
+            <p className="text-xs text-slate-500">Applicant ID Sequence & Department configuration.</p>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-slate-900">Sequential ID Configuration</h3>
+            <div className="p-3 bg-slate-50 rounded-xl text-xs space-y-1">
+              <p><strong>Series:</strong> Strictly starts at <code className="font-mono text-indigo-700 bg-white px-1 py-0.5 rounded border border-slate-200">A001</code></p>
+              <p><strong>Next generated ID:</strong> <code className="font-mono text-indigo-700 bg-white px-1 py-0.5 rounded border border-slate-200">{getNextApplicantId(applicants)}</code></p>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-slate-900">Supported Departments (11)</h3>
+            <div className="flex flex-wrap gap-2 text-xs">
+              {DEPARTMENTS.map(d => (
+                <span key={d} className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-medium">
+                  {d}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-slate-900">Ledger Maintenance</h3>
+            <div className="flex gap-3">
+              <button onClick={handleResetDemoData} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">
+                Reset to A001 - A010 Demo
+              </button>
+              <button onClick={handleClearAll} className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold">
+                Clear All Entries
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>

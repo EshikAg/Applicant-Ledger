@@ -1,0 +1,33 @@
+DAVID CHEN
+Email: david.chen@clouddevops.com
+Phone: +1 (206) 445-9872
+Location: Seattle, WA
+Position: DevOps & Cloud Architect
+
+PROFESSIONAL SUMMARY
+DevOps & Cloud Architect with 8.0 years of experience designing fault-tolerant AWS cloud architectures, infrastructure as code, and automated CI/CD deployment pipelines.
+Current Designation: Principal Cloud Architect
+Current Company: SkyHigh Cloud Infrastructure
+
+CORE TECHNICAL SKILLS
+AWS, Kubernetes, Docker, Terraform, CI/CD, Linux, Python, Go, Ansible, Prometheus, Grafana, Git, Nginx, Bash
+
+KEY SOFT SKILLS
+Disaster Recovery, Mentoring, Strategic Planning, Communication
+
+WORK EXPERIENCE
+Principal Cloud Architect | SkyHigh Cloud Infrastructure (2020 - Present)
+- Architected multi-region AWS cloud infrastructure supporting SOC2 Type II compliance.
+- Reduced deployment pipeline cycle time from 45 minutes to 4.2 minutes via GitHub Actions.
+- Automated Kubernetes cluster scaling across 200+ microservices on AWS EKS.
+
+Senior DevOps Engineer | Velocity Web (2016 - 2020)
+- Built declarative GitOps CI/CD workflows and automated container orchestration.
+- Managed zero-downtime database upgrades across PostgreSQL multi-AZ replicas.
+
+EDUCATION
+B.S. in Computer Engineering | University of Washington (2012 - 2016)
+
+KEY ACHIEVEMENTS
+- Managed zero-downtime migration of 120+ microservices to Kubernetes EKS.
+- Authored automated cloud security guardrails saving $240K/year in orphaned resources.

@@ -1,0 +1,33 @@
+ALEX MORGAN
+Email: alex.morgan@techstack.io
+Phone: +1 (415) 890-2341
+Location: San Francisco, CA
+Position: Senior Full Stack Engineer
+
+PROFESSIONAL SUMMARY
+Senior Full Stack Engineer with 6.5 years of extensive hands-on experience designing and delivering resilient cloud applications, high-performance web frontends, and scalable distributed microservices.
+Current Designation: Senior Full Stack Engineer
+Current Company: Apex Cloud Systems
+
+CORE TECHNICAL SKILLS
+Python, TypeScript, React, Next.js, Node.js, FastAPI, PostgreSQL, Docker, AWS, GraphQL, Redis, Git, Linux, Tailwind CSS, Jest
+
+KEY SOFT SKILLS
+Leadership, System Architecture, Agile Mentorship, Communication, Problem Solving
+
+WORK EXPERIENCE
+Senior Full Stack Engineer | Apex Cloud Systems (2021 - Present)
+- Led an engineering squad of 8 engineers building responsive React and FastAPI cloud platforms.
+- Improved frontend load time by 60% through code splitting and edge caching.
+- Maintained 99.99% uptime across production PostgreSQL and Redis clusters.
+
+Full Stack Software Developer | Horizon Data Labs (2018 - 2021)
+- Built real-time analytics dashboard with React, TypeScript, and WebSocket microservices.
+- Deployed containerized applications using Docker and AWS ECS.
+
+EDUCATION
+B.S. in Computer Science | Stanford University (2014 - 2018)
+
+KEY ACHIEVEMENTS
+- Architected distributed web application handling 4.5M monthly visitors.
+- Reduced cloud server costs by 35% using serverless Lambdas and query caching.

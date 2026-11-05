@@ -1,0 +1,34 @@
+PRIYA SHARMA
+Email: priya.sharma@aimodels.net
+Phone: +91 98111 22334
+Location: Bengaluru, India
+Position: Lead Data Scientist
+
+PROFESSIONAL SUMMARY
+Results-driven Lead Data Scientist with 5.5 years of industry experience developing production-grade machine learning models, deep learning NLP architectures, and predictive analytics pipelines.
+Current Designation: Senior Machine Learning Engineer
+Current Company: TensorAI Technologies
+
+CORE TECHNICAL SKILLS
+Python, PyTorch, TensorFlow, Machine Learning, Deep Learning, NLP, LLMs, Pandas, NumPy, Scikit-Learn, SQL, Docker, FastAPI, Git
+
+KEY SOFT SKILLS
+Critical Thinking, Research, Cross-Functional Collaboration, Problem Solving
+
+WORK EXPERIENCE
+Senior Machine Learning Engineer | TensorAI Technologies (2021 - Present)
+- Deployed enterprise NLP search pipelines indexing 20M+ unstructured contracts.
+- Decreased model inference latency by 45% using TensorRT quantization.
+- Mentored 4 junior data scientists in model evaluation and MLOps best practices.
+
+Data Scientist | Quant Insights (2019 - 2021)
+- Developed customer churn prediction models that saved $1.2M in recurring annual revenue.
+- Created automated feature engineering pipelines using Pandas and SQL.
+
+EDUCATION
+M.Tech in Data Science & Artificial Intelligence | Indian Institute of Science (IISc) (2017 - 2019)
+B.Tech in Computer Science | Delhi Technological University (2013 - 2017)
+
+KEY ACHIEVEMENTS
+- Trained domain-specific LLM with 7B parameters for healthcare query classification.
+- Co-authored 3 peer-reviewed AI research publications in top-tier conferences.

@@ -1,0 +1,32 @@
+MARCUS BRODY
+Email: marcus.brody@infosecshield.com
+Phone: +1 (512) 345-6789
+Location: Austin, TX
+Position: Cybersecurity & SOC Analyst
+
+PROFESSIONAL SUMMARY
+Cybersecurity & SOC Analyst with 3.5 years of experience in security operations, threat hunting, vulnerability scanning, and incident response.
+Current Designation: SOC Analyst II
+Current Company: CyberDefense Networks
+
+CORE TECHNICAL SKILLS
+Cybersecurity, Penetration Testing, Linux, Python, OWASP, SIEM, Network Security, Wireshark, Splunk, Incident Response, Bash
+
+KEY SOFT SKILLS
+Analytical Thinking, Crisis Management, Attention to Detail, Problem Solving
+
+WORK EXPERIENCE
+SOC Analyst II | CyberDefense Networks (2022 - Present)
+- Monitored enterprise SIEM alerts and managed Tier-2 incident containment procedures.
+- Automated threat intelligence feeds and IOC lookups using Python scripts.
+- Performed penetration tests and security architecture reviews for SaaS products.
+
+Junior Security Associate | NetProtect LLC (2021 - 2022)
+- Conducted internal vulnerability assessments and firewall configuration audits.
+
+EDUCATION
+B.S. in Cybersecurity & Information Assurance | University of Texas at Austin (2017 - 2021)
+
+KEY ACHIEVEMENTS
+- Discovered and remediated 18 high-severity vulnerabilities before production release.
+- Holds active certifications: CompTIA Security+, Certified Ethical Hacker (CEH).

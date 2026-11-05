@@ -1,0 +1,30 @@
+AARAV MEHTA
+Email: aarav.mehta@universitycs.edu
+Phone: +91 98450 11223
+Location: Hyderabad, India
+Position: Junior Software Engineer
+
+PROFESSIONAL SUMMARY
+Motivated recent Computer Science graduate with strong foundation in data structures, algorithms, and full-stack web development. Passionate about software engineering and scalable systems.
+Current Designation: Software Engineering Intern
+Current Company: InnoTech Labs
+
+CORE TECHNICAL SKILLS
+Python, JavaScript, React, PostgreSQL, Docker, Git, REST API, HTML5, CSS3, C++, Linux
+
+KEY SOFT SKILLS
+Quick Learner, Enthusiasm, Team Collaboration, Adaptability
+
+WORK EXPERIENCE
+Software Engineering Intern | InnoTech Labs (Jan 2024 - Present)
+- Built automated backend test suites and integrated REST endpoints with FastAPI.
+- Assisted in optimizing database indexing and query execution plans.
+- Contributed to internal developer tooling dashboard built with React.
+
+EDUCATION
+B.Tech in Computer Science and Engineering | National Institute of Technology (NIT) (2020 - 2024)
+Graduation Year: 2024
+
+KEY ACHIEVEMENTS
+- 1st place in Inter-College CodeSprint 2023 out of 120 teams.
+- Solved 400+ problems on LeetCode with top 5% contest rating.

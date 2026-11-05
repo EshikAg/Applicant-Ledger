@@ -1,0 +1,33 @@
+RAHUL VERMA
+Email: rahul.verma@productworks.io
+Phone: +91 98220 33445
+Location: Pune, India
+Position: Senior Product Manager
+
+PROFESSIONAL SUMMARY
+Data-oriented Senior Product Manager with 6.0 years of experience managing core product lifecycle from discovery through iterative delivery and go-to-market scaling.
+Current Designation: Senior Product Manager
+Current Company: FinPulse Fintech
+
+CORE TECHNICAL SKILLS
+Product Management, Agile, Scrum, Jira, Figma, SQL, Tableau, Data Analysis, User Research, Roadmapping, A/B Testing
+
+KEY SOFT SKILLS
+Customer Empathy, Strategic Vision, Stakeholder Alignment, Communication
+
+WORK EXPERIENCE
+Senior Product Manager | FinPulse Fintech (2020 - Present)
+- Owned core consumer payments product roadmap, managing 3 agile engineering squads.
+- Conducted 100+ user interviews to identify high-converting feature opportunities.
+- Increased monthly active users (MAU) from 400K to 2.1M within 18 months.
+
+Associate Product Manager | Digital Ventures (2018 - 2020)
+- Spearheaded feature specifications and market research for B2B SaaS billing engine.
+
+EDUCATION
+MBA in Technology Management | Indian Institute of Management (IIM) (2016 - 2018)
+B.Tech in Information Technology | College of Engineering Pune (2012 - 2016)
+
+KEY ACHIEVEMENTS
+- Launched mobile payment wallet reaching 2.4M active users.
+- Improved customer onboarding completion rate by 34% via frictionless verification.
